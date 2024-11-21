@@ -267,26 +267,24 @@ trait ActionContent
 
         if (is_array($value)) {
             foreach ($value as $key => &$item) {
-                // Skip specific keys like 'employee_number'
-                if ($key === 'employee_number') {
-                    continue;
-                }
-                if ($key === 'has_charging_station') {
-                    return $key ? 'Ja' : 'Nee';
-                }
-
+                // Recursively format dates in the array
                 $item = self::formatDateValues($item);
             }
 
             return $value;
         }
 
-        try {
-            return Carbon::parse($value)
-                ->format(config('filament-activitylog.datetime_format', 'd/m/Y H:i:s'));
-        } catch (InvalidFormatException $e) {
-            return $value;
+        // Ensure the value is a date before formatting
+        if (Carbon::hasFormat($value, 'Y-m-d') || Carbon::hasFormat($value, 'd/m/Y') || strtotime($value) !== false) {
+            try {
+                return Carbon::parse($value)
+                    ->format(config('filament-activitylog.datetime_format', 'd/m/Y H:i:s'));
+            } catch (\Exception $e) {
+                // If parsing fails, return the original value
+                return $value;
+            }
         }
-    }
 
+        return $value; // Return the original value if it's not a date
+    }
 }

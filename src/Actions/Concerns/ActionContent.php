@@ -3,7 +3,6 @@
 namespace Rmsramos\Activitylog\Actions\Concerns;
 
 use Carbon\Carbon;
-use Carbon\Exceptions\InvalidFormatException;
 use Closure;
 use Filament\Actions\StaticAction;
 use Filament\Infolists\Components\TextEntry;
@@ -259,7 +258,7 @@ trait ActionContent
         ];
     }
 
-    private static function formatDateValues(array|string|null $value): array|string|null
+    private static function formatDateValues(array|string|null $value, array $excludeKeys = ['employee_number']): array|string|null
     {
         if (is_null($value)) {
             return $value;
@@ -267,24 +266,27 @@ trait ActionContent
 
         if (is_array($value)) {
             foreach ($value as $key => &$item) {
-                // Recursively format dates in the array
-                $item = self::formatDateValues($item);
+                // Skip formatting for excluded keys
+                if (in_array($key, $excludeKeys, true)) {
+                    continue;
+                }
+
+                $item = self::formatDateValues($item, $excludeKeys);
             }
 
             return $value;
         }
 
         // Ensure the value is a date before formatting
-        if (Carbon::hasFormat($value, 'Y-m-d') || Carbon::hasFormat($value, 'd/m/Y') || strtotime($value) !== false) {
+        if (! is_numeric($value) && strtotime($value) !== false) {
             try {
                 return Carbon::parse($value)
                     ->format(config('filament-activitylog.datetime_format', 'd/m/Y H:i:s'));
             } catch (\Exception $e) {
-                // If parsing fails, return the original value
-                return $value;
+                return $value; // Return original value on failure
             }
         }
 
-        return $value; // Return the original value if it's not a date
+        return $value; // Return the original value if not a date
     }
 }

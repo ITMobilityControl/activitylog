@@ -266,7 +266,12 @@ trait ActionContent
         }
 
         if (is_array($value)) {
-            foreach ($value as &$item) {
+            foreach ($value as $key => &$item) {
+                // Skip specific keys like 'employee_number'
+                if ($key === 'employee_number' || $key === 'has_charging_station') {
+                    continue;
+                }
+
                 $item = self::formatDateValues($item);
             }
 
